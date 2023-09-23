@@ -2,6 +2,7 @@ const express = require("express");
 const { createServer } = require("http");
 const socketIO = require("socket.io");
 const { MultiPlayerGame } = require("./controllers/gameController");
+const { initialTiles } = require("./constants/multiPlayerGame");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
@@ -13,25 +14,48 @@ const io = socketIO(server, {
 });
 
 const chatIO = io.of("/chat");
+const singleIO = io.of("/singlePlayer");
 const gameIO = io.of("/game");
 
 app.get("/", (req, res) => {
   res.send("Serving backend");
 });
 
+singleIO.on("connection", (socket) => {
+  socket.emit("load-game", shuffle(initialTiles));
+});
+
+// Function to shuffle the array of tiles.
+function shuffle(array) {
+  let currentIndex = array.length,
+    randomIndex;
+
+  while (currentIndex != 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    let temp = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temp;
+  }
+  return array;
+}
+
 // Socket connection for chats.
 chatIO.on("connection", (socket) => {
-  console.log("Connected chat socket: " + socket.id);
-
+  const roomId = socket.handshake.auth.gameRoomId;
+  socket.join(roomId);
   // Receive the client message and forward it to all the other connected clients.
-  socket.on("send-message", (message) => {
-    socket.broadcast.emit("receive-message", message);
+  socket.on("send-message", (message, roomId) => {
+    socket.to(roomId).emit("receive-message", message);
   });
 });
 
-// Array to track the players
+// Array to keep track of the number of players.
 const players = [];
-// To increment only by one whilst initializing the players
+// Array to go on with the opening of a new gameRoom when players are 4.
+let fourPlayersCount = 0;
+// To increment only by one whilst initializing the players.
 let initializationIndex = 0;
 // To iterate the players of a room whilst gaming.
 // let playerIndex = 0;
@@ -41,30 +65,29 @@ let currentRoomId = null;
 
 // Socket connection for the game.
 gameIO.on("connection", (socket) => {
-  console.log("Connected game socket: " + socket.id);
-
   let activeGameInstance = null;
   let roomId = null;
-  if (players.length % 4 !== 0) {
+  if (fourPlayersCount % 4 !== 0) {
     roomId = currentRoomId;
     activeGameInstance = gameRoomIds.get(currentRoomId);
   } else {
     roomId = uuidv4();
-    console.log("New object instance");
     const gameRoom = new MultiPlayerGame();
     initializationIndex = 0;
+    fourPlayersCount = 0;
     gameRoomIds.set(roomId, {
       gameRoom,
       players: [],
       playerIndex: 0,
     });
+    console.log(socket.id);
     activeGameInstance = gameRoomIds.get(roomId);
     activeGameInstance.gameRoom.getGameState().roomId = roomId;
     currentRoomId = roomId;
   }
 
   players.push(players.length);
-  console.log("Players: ", players);
+  fourPlayersCount++;
   activeGameInstance.players.push(activeGameInstance.players.length);
 
   // Update the time in the game state.
@@ -85,11 +108,6 @@ gameIO.on("connection", (socket) => {
   activeGameInstance.gameRoom.getGameState().score[
     players[initializationIndex]
   ] = 0;
-
-  console.log(
-    "Score object: ",
-    activeGameInstance.gameRoom.getGameState().score
-  );
 
   socket.join(roomId);
 
@@ -115,16 +133,6 @@ gameIO.on("connection", (socket) => {
   // Roll the dice when a client requests it and emit the result.
   socket.on("roll-dice-request", (playerCode, roomId) => {
     const activeGameInstance = gameRoomIds.get(roomId);
-    console.log(
-      "Roll Dice Values ",
-      playerCode +
-        " " +
-        activeGameInstance.players[activeGameInstance.playerIndex] +
-        " " +
-        activeGameInstance.gameRoom.getGameState().tilesLeft +
-        " " +
-        activeGameInstance.gameRoom.getGameState().isTilesClickAllowed
-    );
     if (
       playerCode ===
         activeGameInstance.players[activeGameInstance.playerIndex] &&
@@ -150,7 +158,6 @@ gameIO.on("connection", (socket) => {
   // Send the updated time when the client requests it.
   socket.on("request-updated-timer", (roomId) => {
     const activeGameInstance = gameRoomIds.get(roomId);
-    console.log("Room ID:", roomId);
     socket.emit(
       "receive-updated-timer",
       activeGameInstance.gameRoom.getTimeInSeconds()
@@ -158,12 +165,19 @@ gameIO.on("connection", (socket) => {
   });
 
   socket.on("start-game", (roomId) => {
-    const activeGameInstance = gameRoomIds.get(roomId);
-    activeGameInstance.gameRoom.startPerPlayerTimer(
-      gameIO,
-      activeGameInstance.players[activeGameInstance.playerIndex],
-      activeGameInstance
-    );
+    if (fourPlayersCount !== 1) {
+      fourPlayersCount = 0;
+      gameIO.to(roomId).emit("start-game-screen");
+      const activeGameInstance = gameRoomIds.get(roomId);
+      if (!activeGameInstance.gameRoom.getGameState().hasGameStarted) {
+        activeGameInstance.gameRoom.startPerPlayerTimer(
+          gameIO,
+          activeGameInstance.players[activeGameInstance.playerIndex],
+          activeGameInstance
+        );
+      }
+      activeGameInstance.gameRoom.getGameState().hasGameStarted = true;
+    }
   });
 
   socket.on(
@@ -171,26 +185,18 @@ gameIO.on("connection", (socket) => {
     (index, playerCode, roomId) => {
       const activeGameInstance = gameRoomIds.get(roomId);
       activeGameInstance.gameRoom.stopPlayerTimer();
-      console.log("Active game room ID:", roomId);
-      console.log(
-        playerCode,
-        activeGameInstance.players[activeGameInstance.playerIndex],
-        activeGameInstance.gameRoom.getGameState().isTilesClickAllowed
-      );
       if (
         playerCode ===
           activeGameInstance.players[activeGameInstance.playerIndex] &&
         activeGameInstance.gameRoom.getGameState().isTilesClickAllowed
       ) {
-        console.log(
-          activeGameInstance.gameRoom.getGameState().diceColor,
-          activeGameInstance.gameRoom.getGameState().tiles[index].color
-        );
         const isMatched =
           activeGameInstance.gameRoom.getGameState().diceColor ===
           activeGameInstance.gameRoom.getGameState().tiles[index].color;
-        if (isMatched) {
-          console.log("It's a match!");
+        if (
+          isMatched &&
+          !activeGameInstance.gameRoom.getGameState().tiles[index].matched
+        ) {
           activeGameInstance.gameRoom.getGameState().tiles[
             index
           ].matched = true;
@@ -244,6 +250,18 @@ gameIO.on("connection", (socket) => {
       }
     }
   );
+  if (fourPlayersCount === 4) {
+    fourPlayersCount = 0;
+    gameIO.to(roomId).emit("start-game-screen");
+    const activeGameInstance = gameRoomIds.get(roomId);
+    if (!activeGameInstance.gameRoom.getGameState().hasGameStarted) {
+      activeGameInstance.gameRoom.startPerPlayerTimer(
+        gameIO,
+        activeGameInstance.players[activeGameInstance.playerIndex],
+        activeGameInstance
+      );
+    }
+  }
 });
 
 server.listen(3000, () => {

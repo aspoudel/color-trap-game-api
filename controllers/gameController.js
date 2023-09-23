@@ -28,6 +28,7 @@ class MultiPlayerGame {
       tilesLeft: 25,
       perPlayerTime: 10,
       roomId: null,
+      hasGameStarted: false,
     };
 
     this.startTimer = this.startTimer.bind(this);
@@ -40,7 +41,6 @@ class MultiPlayerGame {
   // Function to start the per player timer.
   startPerPlayerTimer(gameIO, playerCode, activeGameInstance) {
     if (this.gameState.tilesLeft !== 0) {
-      console.log("Player timer started" + " " + playerCode);
       gameIO.to(this.gameState.roomId).emit("player-timer-call", playerCode);
       this.playerTimer = setTimeout(() => {
         this.sendPlayerTimerUpdate(gameIO, playerCode, activeGameInstance);
@@ -49,7 +49,7 @@ class MultiPlayerGame {
         } else {
           playerCode = 0;
         }
-      }, 12500);
+      }, 10500);
     } else {
       gameIO.to(this.gameState.roomId).emit("player-timer-call", -1);
     }
