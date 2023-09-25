@@ -14,7 +14,7 @@ const app = express();
 const server = createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: ["http://ec2-3-110-118-192.ap-south-1.compute.amazonaws.com:4000"],
+    origin: ["http://ec2-3-110-118-192.ap-south-1.compute.amazonaws.com:3001"],
   },
 });
 
