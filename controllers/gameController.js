@@ -39,15 +39,26 @@ class MultiPlayerGame {
   }
 
   // Function to start the per player timer.
-  startPerPlayerTimer(gameIO, playerCode, activeGameInstance) {
-    if (this.gameState.tilesLeft !== 0) {
-      gameIO.to(this.gameState.roomId).emit("player-timer-call", playerCode);
+  startPerPlayerTimer(gameIO, playerIndex, activeGameInstance) {
+    if (this.gameState.tilesLeft !== 0 && !this.gameState.shouldStopTimer) {
+      if (this.shouldStartTimer) {
+        setTimeout(this.startTimer, 1000);
+        this.shouldStartTimer = false;
+        this.gameState.shouldStartTimer = true;
+      }
+      gameIO
+        .to(this.gameState.roomId)
+        .emit("player-timer-call", activeGameInstance.players[playerIndex]);
       this.playerTimer = setTimeout(() => {
-        this.sendPlayerTimerUpdate(gameIO, playerCode, activeGameInstance);
-        if (playerCode < activeGameInstance.players.length - 1) {
-          playerCode++;
+        this.sendPlayerTimerUpdate(
+          gameIO,
+          activeGameInstance.players[playerIndex],
+          activeGameInstance
+        );
+        if (playerIndex < activeGameInstance.players.length - 1) {
+          playerIndex++;
         } else {
-          playerCode = 0;
+          playerIndex = 0;
         }
       }, 10500);
     } else {
@@ -80,22 +91,9 @@ class MultiPlayerGame {
     this.gameState.isTilesClickAllowed = false;
     this.startPerPlayerTimer(
       gameIO,
-      activeGameInstance.players[activeGameInstance.playerIndex],
+      activeGameInstance.playerIndex,
       activeGameInstance
     );
-
-    // gameIO
-    //   .to(roomId)
-    //   .emit(
-    //     "multi-player-tiles-clicked-receive",
-    //     isMatched,
-    //     activeGameInstance.gameRoom.getGameState().tiles,
-    //     activeGameInstance.gameRoom.getGameState().score[playerCode],
-    //     playerCode,
-    //     activeGameInstance.players[activeGameInstance.playerIndex],
-    //     activeGameInstance.gameRoom.getGameState().isTilesClickAllowed,
-    //     activeGameInstance.gameRoom.getGameState().playerWon
-    //   );
   }
 
   // Function to start the timer in the client side after dice roll.
@@ -132,18 +130,7 @@ class MultiPlayerGame {
     const min = 0;
     const range = max - min + 1;
     const randomNumber = Math.floor(Math.random() * range) + min;
-    if (this.shouldStartTimer) {
-      setTimeout(this.startTimer, 1000);
-      this.shouldStartTimer = false;
-      this.gameState.shouldStartTimer = true;
-    }
     return diceColors[randomNumber];
-    // if (!shouldStartTimer) {
-    //   setShouldStartTimer(true);
-    // }
-    // setShouldPickColor(true);
-    // setShouldRollDice(false);
-    // setIsTilesClickAllowed(true);
   }
 
   getGameState() {
