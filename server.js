@@ -1,7 +1,3 @@
-if (process.env.NODE_ENV != "production") {
-  require("dotenv").config();
-}
-
 const express = require("express");
 const { createServer } = require("http");
 const socketIO = require("socket.io");
@@ -295,7 +291,7 @@ gameIO.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT;
+const PORT = 3000 || process.env.PORT;
 
 server.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
