@@ -22,7 +22,7 @@ const server = createServer(
 );
 const io = socketIO(server, {
   cors: {
-    origin: ["http://ec2-3-110-118-192.ap-south-1.compute.amazonaws.com:3001"],
+    origin: ["https://www.colortrapgame.com", "https://www.colourtrapgame.com"],
   },
 });
 
