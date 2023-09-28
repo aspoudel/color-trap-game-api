@@ -15,6 +15,7 @@ const server = createServer(app);
 const io = socketIO(server, {
   cors: {
     origin: ["https://colortrapgame.com", "https://colourtrapgame.com"],
+    allowedHeaders: ["Authorization"],
   },
 });
 
