@@ -4,18 +4,25 @@
 require("dotenv").config();
 
 const express = require("express");
-const { createServer } = require("http");
+const { createServer } = require("https");
 const socketIO = require("socket.io");
 const { MultiPlayerGame } = require("./controllers/gameController");
 const { initialTiles } = require("./constants/multiPlayerGame");
 const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+const fs = require("fs");
 
 const app = express();
-const server = createServer(app);
+const server = createServer(
+  {
+    key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
+  },
+  app
+);
 const io = socketIO(server, {
   cors: {
-    origin: ["http://ec2-3-110-118-192.ap-south-1.compute.amazonaws.com"],
-    allowedHeaders: ["Authorization"],
+    origin: ["http://ec2-3-110-118-192.ap-south-1.compute.amazonaws.com:3001"],
   },
 });
 
