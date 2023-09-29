@@ -4,22 +4,15 @@
 require("dotenv").config();
 
 const express = require("express");
-const { createServer } = require("https");
+const { createServer } = require("http");
 const socketIO = require("socket.io");
 const { MultiPlayerGame } = require("./controllers/gameController");
 const { initialTiles } = require("./constants/multiPlayerGame");
 const { v4: uuidv4 } = require("uuid");
-const path = require("path");
-const fs = require("fs");
 
 const app = express();
-const server = createServer(
-  {
-    key: fs.readFileSync(path.join(__dirname, "new_cert", "privkey.pem")),
-    cert: fs.readFileSync(path.join(__dirname, "new_cert", "fullchain.pem")),
-  },
-  app
-);
+const server = createServer(app);
+
 const io = socketIO(server, {
   cors: {
     origin: ["https://www.colortrapgame.com", "https://www.colourtrapgame.com"],
