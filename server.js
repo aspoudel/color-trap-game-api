@@ -15,8 +15,8 @@ const fs = require("fs");
 const app = express();
 const server = createServer(
   {
-    key: fs.readFileSync(path.join(__dirname, "cert", "key.pem")),
-    cert: fs.readFileSync(path.join(__dirname, "cert", "cert.pem")),
+    key: fs.readFileSync(path.join(__dirname, "new_cert", "privkey.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "new_cert", "fullchain.pem")),
   },
   app
 );
