@@ -60,7 +60,7 @@ class MultiPlayerGame {
         } else {
           playerIndex = 0;
         }
-      }, 10500);
+      }, 12000);
     } else {
       gameIO.to(this.gameState.roomId).emit("player-timer-call", -1);
     }

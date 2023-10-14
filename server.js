@@ -15,7 +15,12 @@ const server = createServer(app);
 
 const io = socketIO(server, {
   cors: {
-    origin: ["https://www.colortrapgame.com", "https://www.colourtrapgame.com"],
+    origin: [
+      "https://colortrapgame.com",
+      "https://colourtrapgame.com",
+      "https://www.colortrapgame.com",
+      "https://www.colourtrapgame.com",
+    ],
   },
 });
 
@@ -293,7 +298,9 @@ gameIO.on("connection", (socket) => {
         .to(roomId)
         .emit("player-left-event", playerIndex, gameRoom.players);
     }
+    // Check this code, try to remove fourPlayersCount from the object and rely on players.length instead.
     gameRoom.fourPlayersCount--;
+    console.log(socket.id);
   });
 });
 
