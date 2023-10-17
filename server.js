@@ -86,7 +86,7 @@ gameIO.on("connection", (socket) => {
       gameRoom,
       players: [],
       playerIndex: 0,
-      fourPlayersCount: 0,
+      //fourPlayersCount: 0,
     });
     activeGameInstance = gameRoomIds.get(roomId);
     activeGameInstance.gameRoom.getGameState().roomId = roomId;
@@ -123,19 +123,19 @@ gameIO.on("connection", (socket) => {
     "load-game",
     activeGameInstance.gameRoom.getGameState(),
     activeGameInstance.gameRoom.getTimeInSeconds(),
-    activeGameInstance.players[activeGameInstance.fourPlayersCount],
+    //activeGameInstance.players[activeGameInstance.fourPlayersCount],
+    activeGameInstance.players[activeGameInstance.players.length - 1],
     roomId
   );
 
-  gameIO
-    .to(roomId)
-    .emit(
-      "players-joined",
-      activeGameInstance.players,
-      activeGameInstance.players[activeGameInstance.fourPlayersCount]
-    );
+  gameIO.to(roomId).emit(
+    "players-joined",
+    activeGameInstance.players,
+    //activeGameInstance.players[activeGameInstance.fourPlayersCount],
+    activeGameInstance.players[activeGameInstance.players.length - 1]
+  );
 
-  activeGameInstance.fourPlayersCount++;
+  //activeGameInstance.fourPlayersCount++;
 
   // Roll the dice when a client requests it and emit the result.
   socket.on("roll-dice-request", (playerCode, roomId) => {
@@ -242,7 +242,8 @@ gameIO.on("connection", (socket) => {
   );
 
   socket.on("start-game", (roomId, playerCode) => {
-    if (activeGameInstance.fourPlayersCount > 1) {
+    if (activeGameInstance.players.length > 1) {
+      // activeGameInstance.fourPlayersCount > 1) {
       currentRoomId = null;
       gameIO
         .to(roomId)
@@ -262,7 +263,8 @@ gameIO.on("connection", (socket) => {
     }
   });
 
-  if (activeGameInstance.fourPlayersCount === 4) {
+  if (activeGameInstance.players.length === 4) {
+    //activeGameInstance.fourPlayersCount === 4) {
     currentRoomId = null;
     gameIO
       .to(roomId)
@@ -298,8 +300,8 @@ gameIO.on("connection", (socket) => {
         .to(roomId)
         .emit("player-left-event", playerIndex, gameRoom.players);
     }
-    // Check this code, try to remove fourPlayersCount from the object and rely on players.length instead.
-    gameRoom.fourPlayersCount--;
+    // Check this code, try to remove fourPlayersCount from the object and rely on players.length instead. -> Done
+    //gameRoom.fourPlayersCount--;
     console.log(socket.id);
   });
 });
