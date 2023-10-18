@@ -302,7 +302,6 @@ gameIO.on("connection", (socket) => {
     }
     // Check this code, try to remove fourPlayersCount from the object and rely on players.length instead. -> Done
     //gameRoom.fourPlayersCount--;
-    console.log(socket.id);
   });
 });
 
