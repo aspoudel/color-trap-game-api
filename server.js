@@ -76,6 +76,9 @@ let currentRoomId = null;
 // Socket connection for the game.
 gameIO.on("connection", (socket) => {
   let activeGameInstance = gameRoomIds.get(currentRoomId);
+  if (!activeGameInstance) {
+    currentRoomId = null;
+  }
   let roomId = null;
   if (currentRoomId != null) {
     roomId = currentRoomId;
@@ -95,7 +98,8 @@ gameIO.on("connection", (socket) => {
   players.push(players.length);
   socketToRooms.set(socket.id, {
     roomId,
-    playerCode: activeGameInstance.players.length,
+    playerCode:
+      activeGameInstance.players[activeGameInstance.players.length - 1],
   });
   activeGameInstance.players.push(socket.id);
 
@@ -293,7 +297,7 @@ gameIO.on("connection", (socket) => {
     );
     if (gameRoom.players.length === 0) {
       gameRoomIds.delete(roomId);
-      currentRoomId = null;
+      //currentRoomId = null;
       gameRoom.gameRoom.getGameState().shouldStopTimer = true;
     } else {
       gameIO
